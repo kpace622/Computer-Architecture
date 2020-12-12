@@ -11,16 +11,17 @@ class CPU:
         self.registers = [0] * 8
         self.registers[7] = 0xF4
         self.pc = 0
+        self.fl = 0b00000000
 
     def load(self):
         """Load a program into memory."""
 
-        # address = 0
+        address = 0
 
         # For now, we've just hardcoded a program:
 
         # program = [
-        #     # From print8.ls8
+        #     From print8.ls8
         #     0b10000010, # LDI R0,8
         #     0b00000000,
         #     0b00001000,
@@ -57,13 +58,21 @@ class CPU:
         """ALU operations."""
 
         if op == "ADD":
-            self.reg[reg_a] += self.reg[reg_b]
+            self.registers[reg_a] += self.registers[reg_b]
         elif op == "SUB": 
-            self.reg[reg_a] -= self.reg[reg_b]
+            self.registers[reg_a] -= self.registers[reg_b]
         elif op == "MUL":
-            self.reg[reg_a] *= self.reg[reg_b]
+            self.registers[reg_a] *= self.registers[reg_b]
+        elif op == "CMP":
+            self.fl = 0b00000000
+            if self.registers[reg_a] == self.registers[reg_b]:
+                self.fl = 0b00000001
+            elif self.registers[reg_a] > self.registers[reg_b]:
+                self.fl = 0b00000010
+            elif self.registers[reg_a] < self.registers[reg_b]:
+                self.fl = 0b00000100
         else:
-            raise Exception("Unsupported ALU operation")
+            raise Exception("Unsupported ALU operation")        
 
     def trace(self):
         """
@@ -99,6 +108,11 @@ class CPU:
         MUL = 0b10100010
         PUSH = 0b01000101
         POP = 0b01000110
+        CMP = 0b10100111
+        JMP = 0b01010100
+        JEQ = 0b01010101
+        JNE = 0b01010110
+
 
         SP = 7
 
@@ -138,6 +152,20 @@ class CPU:
                 self.registers[operand_a] = value
                 self.registers[SP] += 1
                 self.pc += 2
+
+            elif IR == JMP:
+                self.pc = self.registers[operand_a]
+                return
+
+            elif IR == JEQ:
+                if self.FL == 0b00000001:
+                    self.pc = self.registers[operand_a]
+                    return
+
+            elif IR == JNE:
+                if not (self.fl & 0b001):
+                    self.pc = self.registers[operand_a]
+                    return
             
             else: 
                 self.pc+=1
